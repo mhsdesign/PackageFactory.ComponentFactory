@@ -7,11 +7,16 @@ namespace PackageFactory\ComponentFactory\Domain;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Annotations as Flow;
 use Neos\Fusion\Core\ObjectTreeParser\FilePatternResolver;
+use Neos\Neos\Service\ContentElementWrappingService;
 
+#[Flow\Scope('singleton')]
 class ComponentFactoryService
 {
     #[Flow\InjectConfiguration(path: 'autoInclude', package: 'PackageFactory.ComponentFactory')]
     protected array $autoIncludeConfiguration = [];
+
+    #[Flow\Inject]
+    protected ContentElementWrappingService $contentElementWrappingService;
 
     /**
      * @var array<string, \Closure(): string|\Stringable>
@@ -29,7 +34,9 @@ class ComponentFactoryService
         $this->initialize();
 
         $factory = $this->componentNamesAndFactories[$name->value];
-        return ($factory)($node);
+        $content = ($factory)($node);
+
+        return $this->contentElementWrappingService->wrapContentObject($node, $content, '' /* @todo */);
     }
 
 

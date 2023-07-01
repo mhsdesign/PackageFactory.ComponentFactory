@@ -1,4 +1,3 @@
-
-PackageFactory:
-  ComponentFactory:
-    autoInclude: {}
+# PackageFactory:
+#   ComponentFactory:
+#     autoInclude: []

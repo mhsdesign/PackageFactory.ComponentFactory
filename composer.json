@@ -8,7 +8,10 @@
     "autoload": {
         "psr-4": {
             "PackageFactory\\ComponentFactory\\": "Classes/"
-        }
+        },
+        "files": [
+            "Resources/Private/Helper.php"
+        ]
     },
     "extra": {
         "neos": {
