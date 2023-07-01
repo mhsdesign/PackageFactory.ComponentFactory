@@ -7,9 +7,16 @@ namespace PackageFactory\ComponentFactory\Application\Fusion;
 use Neos\Flow\Annotations as Flow;
 use Neos\Fusion\FusionObjects\AbstractFusionObject;
 use Neos\Fusion\FusionObjects\CaseImplementation;
+use Neos\Fusion\FusionObjects\MatcherImplementation;
 use PackageFactory\ComponentFactory\Domain\ComponentFactoryService;
 use PackageFactory\ComponentFactory\Domain\ComponentName;
 
+/**
+ * Fusion connector to ComponentFactory (see override fusion)
+ *
+ * And replacement for the @see MatcherImplementation
+ * Which checks if "type" has a component factory and uses that instead
+ */
 class ComponentFactoryAwareContentCaseMatcher extends AbstractFusionObject
 {
     #[Flow\Inject]
@@ -47,10 +54,13 @@ class ComponentFactoryAwareContentCaseMatcher extends AbstractFusionObject
             );
         }
 
+        //
+        // THIS IS WHERE THE MAGIC HAPPENS!
+        //
         if ($this->fusionValue('type')
             && $this->componentFactoryService->has($name = ComponentName::fromString($this->fusionValue('type')))) {
 
-           return $this->componentFactoryService->render($name, $this->runtime->getCurrentContext()['node']);
+           return $this->componentFactoryService->render($name, $this->runtime->getCurrentContext()['node'], $this->runtime->getControllerContext());
         }
 
         return $this->runtime->render(

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PackageFactory\ComponentFactory\Domain;
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;

@@ -6,6 +6,7 @@ namespace PackageFactory\ComponentFactory\Domain;
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Fusion\Core\ObjectTreeParser\FilePatternResolver;
 use Neos\Neos\Service\ContentElementWrappingService;
 
@@ -19,7 +20,7 @@ class ComponentFactoryService
     protected ContentElementWrappingService $contentElementWrappingService;
 
     /**
-     * @var array<string, \Closure(): string|\Stringable>
+     * @var array<string, ComponentFactory>
      */
     private readonly array $componentNamesAndFactories;
 
@@ -29,12 +30,12 @@ class ComponentFactoryService
         return isset($this->componentNamesAndFactories[$name->value]);
     }
 
-    public function render(ComponentName $name, Node $node): string
+    public function render(ComponentName $name, Node $node, ControllerContext $controllerContext): string
     {
         $this->initialize();
 
         $factory = $this->componentNamesAndFactories[$name->value];
-        $content = ($factory)($node);
+        $content = $factory->render($node, $controllerContext);
 
         return $this->contentElementWrappingService->wrapContentObject($node, $content, '' /* @todo */);
     }
@@ -70,30 +71,21 @@ class ComponentFactoryService
             // what if the dir is psr autoloaded? Better not
             $factory = $requireFile($includedFile);
 
+            if ($factory instanceof ComponentFactory) {
+                // some higher oder function returned this
+                $componentNamesAndFactories[$factory->name->value] = $factory;
+                continue;
+            }
 
             if (!$factory instanceof \Closure) {
                 continue;
                 throw new \RuntimeException(sprintf('Invalid component factory at: %s. A closure must be returned.', $includedFile));
             }
 
-            $reflected = new \ReflectionFunction($factory);
 
-            $attributes = $reflected->getAttributes();
+            $factory = ComponentFactory::fromClosure($factory);
 
-            $name = null;
-
-            foreach ($attributes as $attribute) {
-                $attributeInstance = $attribute->newInstance();
-                if ($attributeInstance instanceof Component) {
-                    $name = $attributeInstance->name;
-                }
-            }
-
-            if (!$name instanceof ComponentName) {
-                throw new \RuntimeException(sprintf('Invalid component factory at: %s. No component annotation found.', $includedFile));
-            }
-
-            $componentNamesAndFactories[$name->value] = $factory;
+            $componentNamesAndFactories[$factory->name->value] = $factory;
         }
 
         $this->componentNamesAndFactories = $componentNamesAndFactories;
