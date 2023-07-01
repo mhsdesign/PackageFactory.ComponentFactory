@@ -1,0 +1,5 @@
+prototype(PackageFactory.ComponentFactory:ComponentFactory) {
+  @class = ''
+
+  // node = ${node}
+}
