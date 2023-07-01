@@ -34,8 +34,20 @@ class ComponentFactoryService
     {
         $this->initialize();
 
-        $factory = $this->componentNamesAndFactories[$name->value];
+        $factory = $this->componentNamesAndFactories[$name->value] ?? null;
+
+        if (!$factory instanceof ComponentFactory) {
+            throw new \RuntimeException(sprintf('Dont know how to render %s', $name->value));
+        }
+
         $content = $factory->render($node, $controllerContext);
+        if ($content instanceof \Stringable) {
+            $content->__toString();
+        }
+
+        if (!is_string($content)) {
+            throw new \RuntimeException(sprintf('Factory must evaluate to string like.'));
+        }
 
         return $this->contentElementWrappingService->wrapContentObject($node, $content, '' /* @todo */);
     }
@@ -71,19 +83,19 @@ class ComponentFactoryService
             // what if the dir is psr autoloaded? Better not
             $factory = $requireFile($includedFile);
 
-            if ($factory instanceof ComponentFactory) {
-                // some higher oder function returned this
-                $componentNamesAndFactories[$factory->name->value] = $factory;
-                continue;
-            }
-
-            if (!$factory instanceof \Closure) {
+            if (!$factory instanceof \Closure && !$factory instanceof ComponentFactory) {
                 continue;
                 throw new \RuntimeException(sprintf('Invalid component factory at: %s. A closure must be returned.', $includedFile));
             }
 
+            if ($factory instanceof \Closure) {
+                $factory = ComponentFactory::fromClosure($factory);
+            }
+            // some higher oder function returned this ComponentFactory
 
-            $factory = ComponentFactory::fromClosure($factory);
+            if (isset($componentNamesAndFactories[$factory->name->value])) {
+                throw new \RuntimeException(sprintf('Factory for %s exist already. Duplicate found in: %s', $factory->name->value, $includedFile));
+            }
 
             $componentNamesAndFactories[$factory->name->value] = $factory;
         }

@@ -37,6 +37,9 @@ final readonly class ComponentFactory
         return new self($closure, $name);
     }
 
+    /**
+     * @param \Closure(mixed $output, Node $node, ControllerContext $controllerContext): string|\Stringable $fn
+     */
     public function wrap(\Closure $fn): self
     {
         return new self(
