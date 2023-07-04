@@ -15,9 +15,6 @@ class ComponentFactoryService
     #[Flow\InjectConfiguration(path: 'autoInclude', package: 'PackageFactory.ComponentFactory')]
     protected array $autoIncludeConfiguration = [];
 
-    #[Flow\Inject]
-    protected ContentElementWrappingService $contentElementWrappingService;
-
     /**
      * @var array<string, ComponentFactory>
      */
@@ -48,7 +45,7 @@ class ComponentFactoryService
             throw new \RuntimeException(sprintf('Factory must evaluate to string like.'));
         }
 
-        return $this->contentElementWrappingService->wrapContentObject($renderingStuff->node, $content, '' /* @todo */);
+        return $renderingStuff->di->get(ContentElementWrappingService::class)->wrapContentObject($renderingStuff->node, $content, '' /* @todo */);
     }
 
 

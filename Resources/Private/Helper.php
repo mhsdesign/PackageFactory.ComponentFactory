@@ -81,7 +81,7 @@ function contentCollection(RenderingStuff $renderingStuff, string|NodeName|null 
 
 function getNodeUri(RenderingStuff $renderingStuff, bool $absolute = false, ?string $format = null): UriInterface
 {
-    $nodeAddressFactory = NodeAddressFactory::create($renderingStuff->contentRepository);
+    $nodeAddressFactory = NodeAddressFactory::create($renderingStuff->getContentRepository());
     $nodeAddress = $nodeAddressFactory->createFromNode($renderingStuff->node);
     $uriBuilder = new UriBuilder();
     $uriBuilder->setRequest(

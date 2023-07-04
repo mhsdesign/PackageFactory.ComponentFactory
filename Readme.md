@@ -90,10 +90,10 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use PackageFactory\ComponentFactory\Application\Component;
 
 use function PackageFactory\ComponentFactory\Application\editable;
-use function PackageFactory\FusionFactory\Application\fusionRenderer;
-use function PackageFactory\FusionFactory\Application\component;
+use function PackageFactory\FusionFactory\Application\fusionComponent;
+use function PackageFactory\FusionFactory\Application\h;
 
-return fusionRenderer(#[Component('Neos.Demo:Content.Headline')] function(RenderingStuff $renderingStuff)
+return fusionComponent(#[Component('Neos.Demo:Content.Headline')] function(RenderingStuff $renderingStuff)
 {
     $node = $renderingStuff->node;
 
@@ -106,8 +106,8 @@ return fusionRenderer(#[Component('Neos.Demo:Content.Headline')] function(Render
         block: false
     );
 
-    return component(
-        name: 'Neos.Demo:Presentation.Headline',
+    return h(
+        type: 'Neos.Demo:Presentation.Headline',
         props: compact('tagName', 'tagStyle', 'content')
     );
 });

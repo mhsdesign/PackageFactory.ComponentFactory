@@ -89,7 +89,6 @@ class ComponentFactoryAwareContentCaseMatcher extends AbstractFusionObject
                     $context['documentNode'],
                     $context['site'],
                     $inBackend,
-                    $cr,
                     $this->contentRepositoryRegistry->subgraphForNode($node),
                     $this->runtime->getControllerContext()->getRequest()->getHttpRequest(),
                     $this->objectManager

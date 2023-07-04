@@ -1,0 +1,4 @@
+PackageFactory:
+  ComponentFactory:
+    autoInclude:
+      'resource://PackageFactory.ComponentFactory/Private/Testing/**/*.php': true

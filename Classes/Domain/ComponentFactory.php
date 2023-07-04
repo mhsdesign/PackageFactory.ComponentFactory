@@ -40,10 +40,10 @@ final readonly class ComponentFactory
     /**
      * @param \Closure(mixed $output, RenderingStuff $renderingStuff): string|\Stringable $fn
      */
-    public function wrap(\Closure $fn): self
+    public function compose(\Closure $fn): self
     {
         return new self(
-            fn (...$args) => $fn(($this->fn)(...$args), ...$args),
+            fn ($renderingStuff) => $fn(($this->fn)($renderingStuff), $renderingStuff),
             $this->name
         );
     }
