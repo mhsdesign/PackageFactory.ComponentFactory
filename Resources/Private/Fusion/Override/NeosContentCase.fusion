@@ -1,6 +1,6 @@
 
 prototype(Neos.Neos:ContentCase) {
   prototype(Neos.Fusion:Matcher) {
-    @class = 'PackageFactory\\ComponentFactory\\Application\\Fusion\\ComponentFactoryAwareContentCaseMatcher'
+    @class = 'PackageFactory\\ComponentFactory\\Infrastructure\\Fusion\\ComponentFactoryAwareContentCaseMatcher'
   }
 }

@@ -16,12 +16,12 @@ NodeTypes/Content/Headline/Headline.php
 ```php
 <?php
 
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use PackageFactory\ComponentFactory\Domain\Component;
+use PackageFactory\ComponentFactory\Application\RenderingStuff;
+use PackageFactory\ComponentFactory\Application\Component;
 
-return #[Component('Neos.Demo:Content.Headline')] function(Node $node): string
+return #[Component('Neos.Demo:Content.Headline')] function(RenderingStuff $renderingStuff): string
 {
-    return $node->getProperty('title');
+    return $renderingStuff->node->getProperty('title');
 };
 ```
 
@@ -35,13 +35,13 @@ Let the battle begin.
 <?php
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use PackageFactory\ComponentFactory\Domain\Component;
+use PackageFactory\ComponentFactory\Application\Component;
 use YourVendor\Site\Presentation\Headline;
 
-return #[Component('Neos.Demo:Content.Headline')] function(Node $node): Headline
+return #[Component('Neos.Demo:Content.Headline')] function(RenderingStuff $renderingStuff): Headline
 {
     return new Headline(
-        content: $node->getProperty('title')
+        content: $renderingStuff->node->getProperty('title')
     )
 };
 ```
@@ -53,10 +53,10 @@ The annotation `#[Component('Neos.Demo:Content.Headline')]` behaves similar to t
 For inline editable properties, you can use the helper function:
 
 ```php
-use function PackageFactory\ComponentFactory\Domain\editable;
+use function PackageFactory\ComponentFactory\Application\editable;
 
 $content = editable(
-    node: $node,
+    renderingStuff: $renderingStuff,
     property: 'title',
     block: false
 );
@@ -87,19 +87,21 @@ would be:
 <?php
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use PackageFactory\ComponentFactory\Domain\Component;
+use PackageFactory\ComponentFactory\Application\Component;
 
-use function PackageFactory\ComponentFactory\Domain\editable;
-use function PackageFactory\FusionFactory\Domain\fusionRenderer;
-use function PackageFactory\FusionFactory\Domain\component;
+use function PackageFactory\ComponentFactory\Application\editable;
+use function PackageFactory\FusionFactory\Application\fusionRenderer;
+use function PackageFactory\FusionFactory\Application\component;
 
-return fusionRenderer(#[Component('Neos.Demo:Content.Headline')] function(Node $node)
+return fusionRenderer(#[Component('Neos.Demo:Content.Headline')] function(RenderingStuff $renderingStuff)
 {
+    $node = $renderingStuff->node;
+
     $tagName = $node->getProperty('tagName');
     $tagStyle = $node->getProperty('tagStyle');
 
     $content = editable(
-        node: $node,
+        renderingStuff: $renderingStuff,
         property: 'title',
         block: false
     );

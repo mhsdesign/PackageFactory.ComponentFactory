@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PackageFactory\ComponentFactory\Domain;
 
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\Flow\Mvc\Controller\ControllerContext;
+use PackageFactory\ComponentFactory\Application\Component;
+use PackageFactory\ComponentFactory\Application\RenderingStuff;
 
 final readonly class ComponentFactory
 {
@@ -38,7 +38,7 @@ final readonly class ComponentFactory
     }
 
     /**
-     * @param \Closure(mixed $output, Node $node, ControllerContext $controllerContext): string|\Stringable $fn
+     * @param \Closure(mixed $output, RenderingStuff $renderingStuff): string|\Stringable $fn
      */
     public function wrap(\Closure $fn): self
     {
@@ -48,8 +48,8 @@ final readonly class ComponentFactory
         );
     }
 
-    public function render(Node $node, ControllerContext $controllerContext): string|\Stringable
+    public function render(RenderingStuff $renderingStuff): string|\Stringable
     {
-        return ($this->fn)($node, $controllerContext);
+        return ($this->fn)($renderingStuff);
     }
 }

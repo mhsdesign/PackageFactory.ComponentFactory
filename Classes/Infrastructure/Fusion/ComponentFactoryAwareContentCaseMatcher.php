@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
-namespace PackageFactory\ComponentFactory\Application\Fusion;
+namespace PackageFactory\ComponentFactory\Infrastructure\Fusion;
 
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\ObjectManagement\ObjectManager;
 use Neos\Fusion\FusionObjects\AbstractFusionObject;
 use Neos\Fusion\FusionObjects\CaseImplementation;
 use Neos\Fusion\FusionObjects\MatcherImplementation;
+use PackageFactory\ComponentFactory\Application\RenderingStuff;
 use PackageFactory\ComponentFactory\Domain\ComponentFactoryService;
 use PackageFactory\ComponentFactory\Domain\ComponentName;
 
@@ -21,6 +25,12 @@ class ComponentFactoryAwareContentCaseMatcher extends AbstractFusionObject
 {
     #[Flow\Inject]
     protected ComponentFactoryService $componentFactoryService;
+
+    #[Flow\Inject]
+    protected ObjectManager $objectManager;
+
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * If $condition matches, render $type and return it. Else, return MATCH_NORESULT.
@@ -57,10 +67,34 @@ class ComponentFactoryAwareContentCaseMatcher extends AbstractFusionObject
         //
         // THIS IS WHERE THE MAGIC HAPPENS!
         //
-        if ($this->fusionValue('type')
-            && $this->componentFactoryService->has($name = ComponentName::fromString($this->fusionValue('type')))) {
+        $name = ComponentName::fromString($this->fusionValue('type'));
+        if ($this->fusionValue('type') && $this->componentFactoryService->has($name)) {
+            $context = $this->runtime->getCurrentContext();
 
-           return $this->componentFactoryService->render($name, $this->runtime->getCurrentContext()['node'], $this->runtime->getControllerContext());
+            $inBackend = match($action = $this->runtime->getControllerContext()->getRequest()->getControllerActionName()) {
+                'show' => false,
+                'preview' => true,
+                default => throw new \InvalidArgumentException('unknown action ' . $action)
+            };
+
+            /** @var Node $node */
+            $node = $context['node'];
+
+            $cr = $this->contentRepositoryRegistry->get($node->subgraphIdentity->contentRepositoryId);
+
+            return $this->componentFactoryService->render(
+                $name,
+                new RenderingStuff(
+                    $context['node'],
+                    $context['documentNode'],
+                    $context['site'],
+                    $inBackend,
+                    $cr,
+                    $this->contentRepositoryRegistry->subgraphForNode($node),
+                    $this->runtime->getControllerContext()->getRequest()->getHttpRequest(),
+                    $this->objectManager
+                )
+            );
         }
 
         return $this->runtime->render(

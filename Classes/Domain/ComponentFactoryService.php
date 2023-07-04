@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace PackageFactory\ComponentFactory\Domain;
 
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Fusion\Core\ObjectTreeParser\FilePatternResolver;
 use Neos\Neos\Service\ContentElementWrappingService;
+use PackageFactory\ComponentFactory\Application\RenderingStuff;
 
 #[Flow\Scope('singleton')]
 class ComponentFactoryService
@@ -30,7 +29,7 @@ class ComponentFactoryService
         return isset($this->componentNamesAndFactories[$name->value]);
     }
 
-    public function render(ComponentName $name, Node $node, ControllerContext $controllerContext): string
+    public function render(ComponentName $name, RenderingStuff $renderingStuff): string
     {
         $this->initialize();
 
@@ -40,7 +39,7 @@ class ComponentFactoryService
             throw new \RuntimeException(sprintf('Dont know how to render %s', $name->value));
         }
 
-        $content = $factory->render($node, $controllerContext);
+        $content = $factory->render($renderingStuff);
         if ($content instanceof \Stringable) {
             $content->__toString();
         }
@@ -49,7 +48,7 @@ class ComponentFactoryService
             throw new \RuntimeException(sprintf('Factory must evaluate to string like.'));
         }
 
-        return $this->contentElementWrappingService->wrapContentObject($node, $content, '' /* @todo */);
+        return $this->contentElementWrappingService->wrapContentObject($renderingStuff->node, $content, '' /* @todo */);
     }
 
 

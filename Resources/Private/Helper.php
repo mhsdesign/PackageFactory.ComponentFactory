@@ -2,59 +2,63 @@
 
 declare(strict_types=1);
 
-namespace PackageFactory\ComponentFactory\Domain;
+namespace PackageFactory\ComponentFactory\Application;
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
-use Neos\Flow\Core\Bootstrap;
-use Neos\Flow\Mvc\Controller\ControllerContext;
+use Neos\Flow\Mvc\ActionRequest;
+use Neos\Flow\Mvc\Routing\UriBuilder;
+use Neos\Neos\FrontendRouting\NodeAddressFactory;
+use Neos\Neos\FrontendRouting\NodeUriBuilder;
 use Neos\Neos\Fusion\Helper\NodeHelper;
 use Neos\Neos\Service\ContentElementEditableService;
 use Neos\Neos\Service\ContentElementWrappingService;
+use PackageFactory\ComponentFactory\Domain\ComponentFactoryService;
+use PackageFactory\ComponentFactory\Domain\ComponentName;
+use Psr\Http\Message\UriInterface;
 
-function editable(Node $node, string $property, bool $block = true): string
+function editable(RenderingStuff $renderingStuff, string $property, bool $block = true): string
 {
-    $contentElementEditableService = Bootstrap::$staticObjectManager->get(ContentElementEditableService::class);
+    $content = ($block ? '<div>' : '')
+        . ($renderingStuff->node->getProperty($property) ?: '')
+        . ($block ? '</div>' : '');
+
+    if (!$renderingStuff->inBackend) {
+        return $content;
+    }
+
+    $contentElementEditableService = $renderingStuff->di->get(ContentElementEditableService::class);
     return $contentElementEditableService->wrapContentProperty(
-        $node,
+        $renderingStuff->node,
         $property,
-        ($block ? '<div>' : '')
-        . ($node->getProperty($property) ?: '')
-        . ($block ? '</div>' : '')
+        $content
     );
 }
 
-function content(Node $node, ControllerContext $controllerContext): string
+function content(RenderingStuff $renderingStuff): string
 {
-    $objectManager = Bootstrap::$staticObjectManager;
-
-    $componentFactoryService = $objectManager->get(ComponentFactoryService::class);
+    $componentFactoryService = $renderingStuff->di->get(ComponentFactoryService::class);
     return $componentFactoryService->render(
-        ComponentName::fromString($node->nodeTypeName->value),
-        $node,
-        $controllerContext
+        ComponentName::fromString($renderingStuff->node->nodeTypeName->value),
+        $renderingStuff
     );
 }
 
-function contentCollection(Node $node, string|NodeName|null $nodeName, ControllerContext $controllerContext): string
+function contentCollection(RenderingStuff $renderingStuff, string|NodeName|null $nodeName): string
 {
     if (is_string($nodeName)) {
         $nodeName = NodeName::fromString($nodeName);
     }
 
-    $objectManager = Bootstrap::$staticObjectManager;
+    $contentCollectionNode = $renderingStuff->di->get(NodeHelper::class)->nearestContentCollection($renderingStuff->node, $nodeName?->value ?? '');
 
-    $contentCollectionNode = $objectManager->get(NodeHelper::class)->nearestContentCollection($node, $nodeName?->value ?? '');
-
-    $childNodes = $objectManager->get(ContentRepositoryRegistry::class)->subgraphForNode($node)->findChildNodes(
+    $childNodes = $renderingStuff->subgraph->findChildNodes(
         $contentCollectionNode->nodeAggregateId, FindChildNodesFilter::create()
     );
 
     $contents = [];
 
-    $componentFactoryService = $objectManager->get(ComponentFactoryService::class);
+    $componentFactoryService = $renderingStuff->di->get(ComponentFactoryService::class);
 
     foreach ($childNodes as $childNode) {
         if (!$componentFactoryService->has(ComponentName::fromString($childNode->nodeTypeName->value))) {
@@ -63,16 +67,29 @@ function contentCollection(Node $node, string|NodeName|null $nodeName, Controlle
             continue;
         }
 
-        $contents[] = content($childNode, $controllerContext);
+        $contents[] = content($renderingStuff->withNode($childNode));
     }
 
-    $inBackend = $objectManager->get(NodeHelper::class)->inBackend($node);
-
     $content = '<div class="neos-contentcollection"'
-        . ($inBackend ? ' data-__neos-insertion-anchor' : '')
+        . ($renderingStuff->inBackend ? ' data-__neos-insertion-anchor' : '')
         . '>'
         . join('', $contents)
         . '</div>';
 
-    return $objectManager->get(ContentElementWrappingService::class)->wrapContentObject($contentCollectionNode, $content, '' /* @todo */);
+    return $renderingStuff->di->get(ContentElementWrappingService::class)->wrapContentObject($contentCollectionNode, $content, '' /* @todo */);
+}
+
+function getNodeUri(RenderingStuff $renderingStuff, bool $absolute = false, ?string $format = null): UriInterface
+{
+    $nodeAddressFactory = NodeAddressFactory::create($renderingStuff->contentRepository);
+    $nodeAddress = $nodeAddressFactory->createFromNode($renderingStuff->node);
+    $uriBuilder = new UriBuilder();
+    $uriBuilder->setRequest(
+        ActionRequest::fromHttpRequest($renderingStuff->request)
+    );
+    $uriBuilder
+        ->setCreateAbsoluteUri($absolute)
+        ->setFormat($format ?: 'html');
+
+    return NodeUriBuilder::fromUriBuilder($uriBuilder)->uriFor($nodeAddress);
 }

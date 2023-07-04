@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PackageFactory\ComponentFactory\Domain;
+namespace PackageFactory\ComponentFactory\Application;
+
+use PackageFactory\ComponentFactory\Domain\ComponentName;
 
 #[\Attribute]
 final readonly class Component
